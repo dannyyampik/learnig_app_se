@@ -17,21 +17,28 @@ Most tutorials teach you to *copy* an app. Glassbox is designed so that
    all the way to a SQL query by reading the code top-to-bottom.
 2. **The app has an X-Ray panel.** A slide-out panel in the UI that shows,
    live, for every action you take: the HTTP request that was sent, the
-   route that handled it, the middleware it passed through, the SQL that
-   ran, and how long each step took.
+   route that handled it, the SQL that ran, and how long each step took.
 
 ### What you'll learn by building it
 
 | Concept | Where it shows up |
 |---|---|
-| Client/server model | Browser (React) talks to an API server over HTTP |
+| Client/server model | Browser (React) talks to a Python API server over HTTP |
 | HTTP & REST | JSON API with proper methods, status codes, headers |
 | Frontend architecture | Components, state, routing, data fetching |
-| Backend architecture | Layered design: routes → middleware → controllers → services → repositories |
+| Backend architecture | Layered design: routers → services → repositories |
 | Databases | SQLite with hand-written SQL, schema design, migrations |
 | Authentication | Password hashing, sessions, cookies, protected routes |
 | Validation & errors | Input validation, error handling, status codes |
 | System design basics | Why layers exist, where caching/scaling would go |
+
+### Two languages, one lesson
+
+The backend is **Python** (your home turf); the frontend is **JavaScript**,
+because the browser only runs JavaScript. This split is not a compromise —
+it's how most real teams work, and it makes the most important boundary in
+web development *visible*: the two sides share nothing except **HTTP and
+JSON**. Whatever crosses that wire is the contract.
 
 ---
 
@@ -65,14 +72,13 @@ showing the **full request lifecycle**:
 ```
 POST /api/posts                                    201 · 14ms
 ├─ Request    { "body": "hello world" }  cookie: sid=…
-├─ Middleware requestLogger → session → requireAuth ✓
-├─ Handler    posts.create
+├─ Server     session loaded → auth ✓ → posts.create
 ├─ SQL        INSERT INTO posts (user_id, body) VALUES (?, ?)   2ms
 └─ Response   201 Created  { "id": 42, "body": "hello world", … }
 ```
 
 **How it works:** the backend collects trace data for each request
-(middleware hit, SQL executed, timings) and returns it in a `X-Glassbox-Trace`
+(auth steps, SQL executed, timings) and returns it in a `X-Glassbox-Trace`
 response header (dev mode only). The frontend's API client reads that header
 and feeds the X-Ray panel. This is a miniature version of real-world
 *distributed tracing* (like OpenTelemetry) — a system design lesson in itself.
@@ -91,9 +97,9 @@ flowchart LR
         UI --> API_CLIENT
     end
 
-    subgraph Server ["⚙️ Server (Node.js + Express)"]
-        MW["Middleware<br/>logging · sessions · auth"]
-        ROUTES["Routes / Controllers<br/>HTTP in, JSON out"]
+    subgraph Server ["🐍 Server (Python + FastAPI)"]
+        MW["Middleware & deps<br/>logging · sessions · auth"]
+        ROUTES["Routers<br/>HTTP in, JSON out"]
         SERVICES["Services<br/>business rules"]
         REPO["Repositories<br/>SQL lives here"]
         MW --> ROUTES --> SERVICES --> REPO
@@ -117,13 +123,13 @@ doc for every big system you'll ever see is a variation of this picture.
 ```mermaid
 flowchart LR
     B["Browser<br/>localhost:5173"] -->|"/api/* (proxied)"| V["Vite dev server<br/>:5173"]
-    V -->|proxy| E["Express API<br/>:3000"]
+    V -->|proxy| E["FastAPI (uvicorn)<br/>:8000"]
     V -->|"HTML / JS / CSS<br/>hot reload"| B
 ```
 
-Vite serves the frontend with hot reload and **proxies** `/api/*` to Express.
-This sidesteps CORS in dev and mirrors how production reverse proxies
-(nginx, load balancers) work — another quiet system design lesson.
+Vite serves the frontend with hot reload and **proxies** `/api/*` to the
+Python server. This sidesteps CORS in dev and mirrors how production reverse
+proxies (nginx, load balancers) work — another quiet system design lesson.
 
 ---
 
@@ -131,32 +137,35 @@ This sidesteps CORS in dev and mirrors how production reverse proxies
 
 | Layer | Choice | Why (for learning) |
 |---|---|---|
-| Frontend | **React 18 + Vite** | Industry standard; Vite is fast and simple |
+| Backend | **Python + FastAPI** | Python per your preference; FastAPI is the modern standard, minimal boilerplate |
+| API docs | **FastAPI's built-in `/docs`** | Free interactive Swagger page — call your own API from the browser, no UI needed |
+| Database | **SQLite** (stdlib `sqlite3`) | Zero setup, it's just a file; ships with Python |
+| SQL | **Hand-written SQL** | You learn actual SQL, not an ORM's dialect — no SQLAlchemy magic |
+| Validation | **pydantic** | Comes with FastAPI; models double as living documentation of the API contract |
+| Auth | **Sessions + httpOnly cookies** | Simpler & safer to learn than JWT; JWT covered as an extension |
+| Passwords | **bcrypt** | The standard; teaches *why we never store plaintext* |
+| Backend tests | **pytest + FastAPI TestClient** | Unit tests (services) + real-HTTP-level API tests |
+| Frontend | **React 18 + Vite (JavaScript)** | Industry standard; the browser's native language |
 | Frontend routing | **react-router** | Teaches client-side routing vs. server routing |
 | Server state | **Hand-rolled hooks** (no React Query yet) | You learn *why* libraries like React Query exist by feeling the pain first |
-| Backend | **Node.js + Express** | Minimal, unopinionated — every line is yours |
-| Database | **SQLite** (`better-sqlite3`) | Zero setup, it's just a file; real SQL, no ORM magic |
-| SQL | **Hand-written SQL** | You learn actual SQL, not an ORM's dialect |
-| Auth | **Sessions + httpOnly cookies** | Simpler & safer to learn than JWT; JWT covered as a "phase 6" extension |
-| Passwords | **bcrypt** | The standard; teaches *why we never store plaintext* |
-| Validation | **zod** | Shared schemas between client and server — teaches the trust boundary |
-| Language | **JavaScript + JSDoc types** | One less compiler to configure; TypeScript is a listed extension |
-| Testing | **Vitest + supertest** | Unit tests (services) + API tests (HTTP level) |
+| Frontend tests | **Vitest** | A few component tests where they teach something |
 
 **Guiding rule:** *no magic*. Prefer 20 lines of readable code over a
-dependency, everywhere it's practical.
+dependency, everywhere it's practical. (This is why: no ORM, no session
+library, no auth framework — we build each one small and readable.)
 
 ---
 
 ## 5. Data Model
 
-Three tables. Small enough to hold in your head, rich enough to teach
-one-to-many, many-to-many, foreign keys, and aggregates.
+Three tables (plus sessions). Small enough to hold in your head, rich enough
+to teach one-to-many, many-to-many, foreign keys, and aggregates.
 
 ```mermaid
 erDiagram
     users ||--o{ posts : "writes"
     users ||--o{ likes : "gives"
+    users ||--o{ sessions : "has"
     posts ||--o{ likes : "receives"
 
     users {
@@ -176,6 +185,11 @@ erDiagram
         integer post_id PK, FK
         text created_at
     }
+    sessions {
+        text id PK "random token"
+        integer user_id FK
+        text created_at
+    }
 ```
 
 Notes:
@@ -193,7 +207,10 @@ Notes:
 
 ## 6. API Design (REST)
 
-All endpoints under `/api`, JSON in / JSON out.
+All endpoints under `/api`, JSON in / JSON out. FastAPI auto-generates an
+interactive playground for all of these at **`/docs`** — you can exercise
+the whole API without the frontend, which is exactly how to understand that
+*the API is the app; the UI is just one client of it.*
 
 | Method & path | Auth? | Purpose | Success | Failures |
 |---|---|---|---|---|
@@ -203,10 +220,10 @@ All endpoints under `/api`, JSON in / JSON out.
 | `GET /api/auth/me` | — | Who am I? (session check) | `200` user or `null` | — |
 | `GET /api/posts?page=1` | — | Paginated feed | `200` posts + page info | `400` bad page |
 | `POST /api/posts` | ✓ | Create a post | `201` post | `400` invalid, `401` |
-| `DELETE /api/posts/:id` | ✓ | Delete own post | `204` | `401`, `403` not yours, `404` |
-| `PUT /api/posts/:id/like` | ✓ | Like (idempotent) | `204` | `401`, `404` |
-| `DELETE /api/posts/:id/like` | ✓ | Unlike (idempotent) | `204` | `401`, `404` |
-| `GET /api/users/:username` | — | Profile + their posts | `200` | `404` |
+| `DELETE /api/posts/{id}` | ✓ | Delete own post | `204` | `401`, `403` not yours, `404` |
+| `PUT /api/posts/{id}/like` | ✓ | Like (idempotent) | `204` | `401`, `404` |
+| `DELETE /api/posts/{id}/like` | ✓ | Unlike (idempotent) | `204` | `401`, `404` |
+| `GET /api/users/{username}` | — | Profile + their posts | `200` | `404` |
 
 Design lessons baked in:
 
@@ -220,25 +237,26 @@ Design lessons baked in:
 
 ---
 
-## 7. Backend Design
+## 7. Backend Design (Python + FastAPI)
 
-Express app with an explicit layered structure. Data flows down, results
-flow back up. Each layer only talks to the one below it.
+An explicit layered structure. Data flows down, results flow back up. Each
+layer only talks to the one below it.
 
 ```
 HTTP request
    │
    ▼
-middleware/        cross-cutting: logging, session loading, auth guard, tracing
+middleware +        cross-cutting: request logging, tracing;
+dependencies        get_current_user / require_user (session → user)
    │
    ▼
-routes/            "controllers" — parse HTTP, validate input, call a service,
+routers/            parse HTTP, validate input (pydantic), call a service,
    │                shape the JSON response. NO business logic here.
    ▼
-services/          business rules — "you can only delete your own post".
-   │                Knows nothing about HTTP. Throws typed errors (NotFound…).
+services/           business rules — "you can only delete your own post".
+   │                Knows nothing about HTTP. Raises typed errors (NotFound…).
    ▼
-db/repositories/   all SQL lives here. Knows nothing about business rules.
+db/repositories/    all SQL lives here. Knows nothing about business rules.
    │
    ▼
 SQLite
@@ -247,28 +265,34 @@ SQLite
 **Why layers?** Swap-ability and testability. Services can be unit-tested
 without a web server. SQLite could be swapped for Postgres by touching only
 the repository layer. Typed service errors (`NotFoundError`,
-`ForbiddenError`) are translated to status codes in *one* place — a central
-error-handling middleware — instead of scattered `res.status(...)` calls.
+`ForbiddenError`) are translated to status codes in *one* place — a pair of
+FastAPI exception handlers — instead of scattered status codes everywhere.
+
+**FastAPI dependencies, demystified:** `Depends(require_user)` is the only
+piece of framework "magic" we allow, and we treat it as a lesson: it's just
+a function that runs before your route handler (read the cookie, look up the
+session, return the user — or raise `401`). We write it ourselves, in ~15
+lines, so nothing is hidden.
 
 ### Auth flow (sessions + cookies)
 
 ```mermaid
 sequenceDiagram
     participant B as Browser
-    participant S as Server
+    participant S as FastAPI server
     participant DB as SQLite
 
     B->>S: POST /api/auth/login { username, password }
     S->>DB: SELECT * FROM users WHERE username = ?
     DB-->>S: user row (with password_hash)
-    S->>S: bcrypt.compare(password, hash)
+    S->>S: bcrypt.checkpw(password, hash)
     S->>DB: INSERT INTO sessions (id, user_id)
     S-->>B: 200 + Set-Cookie: sid=abc123 (httpOnly)
     Note over B: Browser stores cookie,<br/>attaches it automatically
 
     B->>S: POST /api/posts (Cookie: sid=abc123)
     S->>DB: SELECT user_id FROM sessions WHERE id = ?
-    S->>S: requireAuth ✓ — req.user is set
+    S->>S: require_user ✓ — current user resolved
     S->>DB: INSERT INTO posts ...
     S-->>B: 201 Created
 ```
@@ -341,19 +365,19 @@ sequenceDiagram
     participant U as User
     participant R as React (PostComposer)
     participant F as api.js (fetch)
-    participant M as Express middleware
-    participant C as posts route
-    participant S as posts service
+    participant M as FastAPI middleware/deps
+    participant C as posts router
+    participant S as post service
     participant D as SQLite
 
     U->>R: clicks "Post"
-    R->>R: client-side validate (zod) — fast feedback
+    R->>R: client-side checks — fast feedback
     R->>F: api.post('/posts', { body })
     F->>M: POST /api/posts + session cookie
-    M->>M: log → load session → requireAuth ✓
+    M->>M: log → load session → require_user ✓
     M->>C: route matched: POST /api/posts
-    C->>C: server-side validate (same zod schema!)
-    C->>S: createPost(user.id, body)
+    C->>C: server-side validate (pydantic)
+    C->>S: create_post(user.id, body)
     S->>D: INSERT INTO posts ...
     D-->>S: new row id
     S-->>C: post object
@@ -363,41 +387,45 @@ sequenceDiagram
     R-->>U: new post appears (+ X-Ray entry)
 ```
 
-Note step 2 *and* step 8: **validation happens twice**. Client-side for
-instant feedback; server-side because *the server can never trust the
-client* — anyone can send bytes at your API with `curl`. That trust
-boundary is possibly the single most important idea in web development.
+Note steps 2 *and* 7: **validation happens twice**, in two different
+languages. Client-side (JavaScript) for instant feedback; server-side
+(pydantic) because *the server can never trust the client* — anyone can
+send bytes at your API with `curl`, bypassing your UI entirely. The server's
+validation is the real one; the client's is a courtesy. That trust boundary
+is possibly the single most important idea in web development — and having
+the two sides in different languages makes it impossible to blur.
 
 ---
 
 ## 10. Project Structure
 
-A monorepo with two packages — mirrors the client/server split physically:
+A monorepo with two apps — mirrors the client/server split physically:
 
 ```
 glassbox/
 ├── DESIGN.md                  ← you are here
-├── package.json               workspace root (npm workspaces)
 ├── docs/
-│   └── lessons/               one short doc per concept, linked from code
-├── server/
-│   ├── package.json
-│   └── src/
-│       ├── index.js           entry: create app, apply migrations, listen
-│       ├── app.js             express app wiring (exported for tests)
-│       ├── middleware/        logger.js · session.js · auth.js · trace.js · errors.js
-│       ├── routes/            auth.js · posts.js · users.js
-│       ├── services/          authService.js · postService.js · userService.js
-│       ├── db/
-│       │   ├── migrations/    001_init.sql …
-│       │   ├── database.js    connection + migration runner + traced exec
-│       │   └── repositories/  userRepo.js · postRepo.js · likeRepo.js
-│       └── errors.js          NotFoundError, ForbiddenError, …
-├── shared/
-│   └── validation.js          zod schemas used by BOTH client & server
-└── web/
+│   └── lessons/               one short page per concept, linked from code
+├── server/                    🐍 Python
+│   ├── pyproject.toml         deps: fastapi, uvicorn, bcrypt, pytest, httpx
+│   ├── app/
+│   │   ├── main.py            create app, register routers, apply migrations
+│   │   ├── middleware.py      request logging + X-Ray trace collection
+│   │   ├── deps.py            get_current_user / require_user dependencies
+│   │   ├── schemas.py         pydantic models (the API contract)
+│   │   ├── errors.py          NotFoundError, ForbiddenError, … + handlers
+│   │   ├── routers/           auth.py · posts.py · users.py
+│   │   ├── services/          auth_service.py · post_service.py · user_service.py
+│   │   └── db/
+│   │       ├── migrations/    001_init.sql …
+│   │       ├── database.py    connection + migration runner + traced execute
+│   │       └── repositories/  user_repo.py · post_repo.py · like_repo.py
+│   └── tests/
+│       ├── test_services.py   unit tests, in-memory SQLite
+│       └── test_api.py        real HTTP flows: signup → login → post → like
+└── web/                       ⚛️ JavaScript
     ├── package.json
-    ├── vite.config.js         dev proxy → :3000
+    ├── vite.config.js         dev proxy → :8000
     └── src/
         ├── main.jsx · App.jsx
         ├── api.js             the fetch wrapper + trace capture
@@ -407,24 +435,26 @@ glassbox/
         └── components/        NavBar · PostComposer · PostCard · LikeButton · XRayPanel
 ```
 
-The `shared/` package is a lesson on its own: the *same* validation schema
-runs in the browser and on the server, so the rules can't drift apart.
+`docs/lessons/` gets **one short page per concept** (HTTP basics, REST,
+sessions & cookies, hashing, SQL joins, the trust boundary, tracing, …),
+each linked from the code that demonstrates it — so the code says *how* and
+the lesson page says *why*.
 
 ---
 
 ## 11. Cross-Cutting Concerns
 
-- **Error handling:** services throw typed errors; one Express error
-  middleware maps them to status codes and the standard error envelope.
-  Nothing else in the codebase calls `res.status(500)`.
+- **Error handling:** services raise typed errors; FastAPI exception
+  handlers map them to status codes and the standard error envelope, in one
+  place. Nothing else in the codebase sets a 500.
 - **Security (the teachable minimum):** bcrypt password hashing; `httpOnly`
   + `SameSite=Lax` session cookie (CSRF mitigation); parameterized SQL only
   (SQL injection); React's default escaping (XSS); server-side validation
   on every write.
 - **Testing strategy:**
-  - *Unit tests* on services (fast, no HTTP, in-memory SQLite).
-  - *API tests* with supertest (spin up the app, make real HTTP calls,
-    assert status codes and bodies — signup → login → post → like flows).
+  - *Unit tests* on services (pytest, fast, no HTTP, in-memory SQLite).
+  - *API tests* with FastAPI's TestClient (real HTTP semantics: status
+    codes, cookies, full signup → login → post → like flows).
   - A couple of frontend component tests (composer validation, like rollback).
 - **Logging:** one line per request — method, path, status, duration. The
   same data feeds the X-Ray trace.
@@ -438,9 +468,9 @@ cluster. (Roughly one PR per phase.)
 
 | Phase | Deliverable | You learn |
 |---|---|---|
-| **1. Skeleton** | Monorepo, Express serving `GET /api/health`, React showing the result, Vite proxy | Client/server split, HTTP round trip, dev tooling |
+| **1. Skeleton** | FastAPI serving `GET /api/health`, React showing the result, Vite proxy, `/docs` live | Client/server split, HTTP round trip, dev tooling |
 | **2. Data layer** | SQLite, migrations, repositories, seed script; feed read-only from real data | SQL, schema design, the repository pattern |
-| **3. Auth** | Signup/login/logout/me, sessions, cookies, `requireAuth` | Hashing, sessions, cookies, middleware |
+| **3. Auth** | Signup/login/logout/me, sessions, cookies, `require_user` | Hashing, sessions, cookies, dependencies |
 | **4. Core features** | Posting, deleting, likes, profiles, pagination | Validation, REST semantics, idempotency, optimistic UI |
 | **5. X-Ray panel** | Trace middleware + header + panel UI | Observability, the full request lifecycle |
 | **6. Hardening** | Error envelope everywhere, tests, docs/lessons pass | Testing, error design, polish |
@@ -453,21 +483,16 @@ cluster. (Roughly one PR per phase.)
 - **Caching layer** → memoize the feed query, cache invalidation pain
 - **Rate limiting** → protecting APIs from abuse
 - **Docker + deploy** → what "production" actually means
-- **TypeScript migration** → types as documentation
+- **Async SQLAlchemy / ORM comparison** → what ORMs buy you, now that you know raw SQL
 
 ---
 
-## 13. Open Questions for Review
+## 13. Decisions from Review (2026-07-04)
 
-1. **App concept OK?** A message board maximizes concept coverage per
-   feature, but it could equally be a recipe box / bookmark manager if you
-   prefer — the architecture is identical.
-2. **JavaScript + JSDoc vs. TypeScript from day one?** JS keeps the
-   toolchain minimal; TS is more industry-realistic but adds config and
-   compiler friction while learning.
-3. **Sessions vs. JWT for the MVP?** Design says sessions (simpler mental
-   model, safer defaults); JWT as a later extension.
-4. **X-Ray panel in phase 5** — or build a minimal version earlier (phase 2)
-   so it's usable while learning the other phases?
-5. **How deep should `docs/lessons/` go?** One page per concept, or keep all
-   explanation in code comments?
+| # | Question | Decision |
+|---|---|---|
+| 1 | App concept | ✅ Message board, as designed |
+| 2 | Backend language | ✅ **Python + FastAPI** (was Node/Express) — frontend stays JS/React since the browser requires it |
+| 3 | Auth approach | ✅ Sessions + cookies; JWT as a future extension |
+| 4 | X-Ray panel timing | ✅ Phase 5, per the plan |
+| 5 | Lesson docs | ✅ One page per concept in `docs/lessons/`, linked from code |
