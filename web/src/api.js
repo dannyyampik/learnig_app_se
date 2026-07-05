@@ -16,12 +16,13 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiGet(path) {
+async function request(path, options = {}) {
   const response = await fetch(`${BASE}${path}`, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...options.headers },
     // Send cookies with every request — this is how the session cookie
-    // (phase 3) will travel. Harmless before then.
+    // travels. The browser attaches it; we just don't opt out.
     credentials: 'include',
+    ...options,
   })
 
   if (!response.ok) {
@@ -36,5 +37,19 @@ export async function apiGet(path) {
     )
   }
 
+  // 204 No Content has no body to parse (e.g. logout).
+  if (response.status === 204) return null
   return response.json()
+}
+
+export function apiGet(path) {
+  return request(path)
+}
+
+export function apiPost(path, body) {
+  return request(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  })
 }

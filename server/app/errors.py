@@ -4,8 +4,13 @@ The design promises every error the same JSON shape:
 
     { "error": { "code": "...", "message": "...", "details": [...] } }
 
-Handlers registered here enforce that promise, so no route ever
-hand-crafts an error response.
+Two kinds of failure flow through here:
+
+* **Validation** — FastAPI rejected the request before our code ran.
+* **AppError** — a *business* rule said no. Services raise these without
+  knowing anything about HTTP; the handler below translates them to a
+  status code in exactly one place. No route ever calls
+  ``JSONResponse(status_code=...)`` by hand.
 """
 
 from fastapi import FastAPI, Request
@@ -13,11 +18,54 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 
+class AppError(Exception):
+    """Base class for 'the rules say no'. Subclasses pin the status/code."""
+
+    status = 500
+    code = "INTERNAL"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
+
+class UnauthorizedError(AppError):
+    """401 — we don't know who you are (log in first)."""
+
+    status = 401
+    code = "UNAUTHORIZED"
+
+
+class ForbiddenError(AppError):
+    """403 — we know who you are, and you still can't do that."""
+
+    status = 403
+    code = "FORBIDDEN"
+
+
+class NotFoundError(AppError):
+    """404 — no such thing."""
+
+    status = 404
+    code = "NOT_FOUND"
+
+
+class ConflictError(AppError):
+    """409 — collides with something that already exists."""
+
+    status = 409
+    code = "CONFLICT"
+
+
 def error_response(status: int, code: str, message: str, details: list | None = None):
     body = {"error": {"code": code, "message": message}}
     if details is not None:
         body["error"]["details"] = details
     return JSONResponse(status_code=status, content=body)
+
+
+async def app_error_handler(request: Request, exc: AppError):
+    return error_response(exc.status, exc.code, exc.message)
 
 
 async def validation_error_handler(request: Request, exc: RequestValidationError):
@@ -29,7 +77,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     """
     details = [
         {
-            # e.g. "query.page" or "body.body" — where in the request
+            # e.g. "query.page" or "body.password" — where in the request
             "field": ".".join(str(part) for part in err["loc"]),
             "message": err["msg"],
         }
@@ -39,4 +87,5 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 
 def register_error_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(AppError, app_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)

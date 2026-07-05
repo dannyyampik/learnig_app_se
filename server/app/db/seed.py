@@ -12,12 +12,14 @@ want from a smoke test.
 import random
 import sys
 
+import bcrypt
+
 from . import database
 from .repositories import like_repo, post_repo, user_repo
 
-# Password auth arrives in phase 3; until then seeded accounts carry a
-# sentinel that can never match a real bcrypt hash.
-PLACEHOLDER_HASH = "!seeded-account-no-password-yet"
+# Every demo account gets the same password so you can log in as any of
+# them: password123 (bad password, great classroom).
+DEMO_PASSWORD = "password123"
 
 USERNAMES = ["alice", "bob", "carol"]
 
@@ -54,7 +56,10 @@ POST_BODIES = [
 
 
 def seed(conn) -> tuple[int, int, int]:
-    users = [user_repo.create(conn, name, PLACEHOLDER_HASH) for name in USERNAMES]
+    # Hash once, reuse for all three — bcrypt is deliberately slow, and
+    # they all share the demo password anyway.
+    password_hash = bcrypt.hashpw(DEMO_PASSWORD.encode(), bcrypt.gensalt()).decode()
+    users = [user_repo.create(conn, name, password_hash) for name in USERNAMES]
 
     # Deterministic "randomness": same seed, same demo data, every time.
     rng = random.Random(42)
@@ -90,7 +95,8 @@ def main() -> None:
     conn.close()
     print(
         f"Seeded {n_users} users, {n_posts} posts, {n_likes} likes "
-        f"into {database.db_path()}"
+        f"into {database.db_path()}\n"
+        f"Log in as any of {', '.join(USERNAMES)} — password: {DEMO_PASSWORD}"
     )
 
 

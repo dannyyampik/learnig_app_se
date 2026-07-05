@@ -28,10 +28,12 @@ export default function PostCard({ post }) {
           working silently on our behalf. */}
       <p className="post-body">{post.body}</p>
       <div className="post-foot">
+        {/* likedByMe is computed by the SQL feed query for the logged-in
+            viewer. Clicking (like/unlike) arrives in phase 4. */}
         <button
-          className="like"
+          className={post.likedByMe ? 'like liked' : 'like'}
           disabled
-          title="Liking needs an account — that's phase 3"
+          title="Liking arrives in phase 4"
         >
           ♥ {post.likeCount}
         </button>
