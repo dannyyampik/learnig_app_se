@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useXRay } from '../context/XRayContext.jsx'
 
 export default function NavBar() {
   const { user, logout } = useAuth()
+  const xray = useXRay()
 
   return (
     <header className="nav">
@@ -10,6 +12,13 @@ export default function NavBar() {
         🔍 Glassbox
       </Link>
       <nav className="nav-right">
+        <button
+          className="linklike"
+          onClick={xray.toggle}
+          title="Toggle the X-Ray panel (or press `)"
+        >
+          🩻 X-Ray
+        </button>
         <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">
           API docs
         </a>
