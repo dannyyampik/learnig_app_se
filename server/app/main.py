@@ -12,11 +12,16 @@ Run it with:  uvicorn app.main:app --reload --port 8000
 """
 
 import json
+import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+logger = logging.getLogger("glassbox")
 
 from . import trace
 from .db import database
@@ -40,7 +45,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Glassbox API",
     description="A tiny message board that shows you its own internals.",
-    version="0.5.0",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
@@ -51,29 +56,57 @@ app.include_router(users.router)
 
 
 @app.middleware("http")
-async def xray(request: Request, call_next):
-    """The X-Ray middleware: wraps EVERY api request, first in, last out.
+async def observe(request: Request, call_next):
+    """Observability middleware: wraps EVERY api request, first in, last out.
 
-    Open a trace, let the whole stack run (auth deps, router, service,
-    SQL — each dropping notes into the trace), then ship what was
-    collected back to the browser in a response header. The frontend's
-    api.js reads the header and feeds the X-Ray panel.
+    Two jobs, same vantage point:
 
-    Real systems gate observability like this behind an environment
-    (never expose internals to the public internet!). We keep it on by
-    default because exposing internals is this app's entire point —
-    set GLASSBOX_TRACE=0 to see the app go opaque.
+    * **Log** one line per request — method, path, status, duration.
+      This is the heartbeat of every production service; when something
+      breaks at 3am, this log is where the investigation starts.
+    * **Trace** (the X-Ray): open a trace, let the whole stack run (auth
+      deps, router, service, SQL — each dropping notes into it), then
+      ship what was collected back to the browser in a response header.
+      The frontend's api.js reads the header and feeds the X-Ray panel.
+
+    Real systems gate tracing like this behind an environment (never
+    expose internals to the public internet!). We keep it on by default
+    because exposing internals is this app's entire point — set
+    GLASSBOX_TRACE=0 to see the app go opaque. The log line stays on
+    either way.
     """
-    if os.environ.get("GLASSBOX_TRACE", "1") == "0" or not request.url.path.startswith(
-        "/api"
-    ):
+    if not request.url.path.startswith("/api"):
         return await call_next(request)
 
-    trace.start(request.method, request.url.path)
-    response = await call_next(request)
-    collected = trace.finish(response.status_code)
-    if collected is not None:
-        response.headers["X-Glassbox-Trace"] = json.dumps(collected)
+    tracing = os.environ.get("GLASSBOX_TRACE", "1") != "0"
+    if tracing:
+        trace.start(request.method, request.url.path)
+
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        # The catch-all handler (errors.py) will turn this into a 500
+        # envelope for the client; we still owe the log its line.
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        logger.info(
+            "%s %s -> 500 in %.1fms", request.method, request.url.path, elapsed_ms
+        )
+        raise
+
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    logger.info(
+        "%s %s -> %s in %.1fms",
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+
+    if tracing:
+        collected = trace.finish(response.status_code)
+        if collected is not None:
+            response.headers["X-Glassbox-Trace"] = json.dumps(collected)
     return response
 
 

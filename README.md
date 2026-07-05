@@ -15,7 +15,7 @@ every piece exists. Concept explainers live in [docs/lessons/](./docs/lessons/).
 | 3. Auth | ✅ | Signup/login, bcrypt, sessions, cookies |
 | 4. Core features | ✅ | Posting, deleting, optimistic likes, profiles |
 | 5. X-Ray panel | ✅ | Live request-lifecycle inspector (press `` ` ``) |
-| 6. Hardening | ⏳ | Tests, error envelope, polish |
+| 6. Hardening | ✅ | Request log, 500 envelope, frontend tests |
 
 ## Running it
 
@@ -50,5 +50,26 @@ Then open:
 ## Running the tests
 
 ```bash
-cd server && source .venv/bin/activate && python -m pytest
+cd server && source .venv/bin/activate && python -m pytest   # 34 backend tests
+cd web && npm test                                           # 7 component tests
 ```
+
+## The lessons
+
+One short page per concept, each linked from the code that demonstrates it:
+
+1. [The client/server split](docs/lessons/01-the-client-server-split.md)
+2. [SQL and the schema](docs/lessons/02-sql-and-the-schema.md)
+3. [The layered backend](docs/lessons/03-the-layered-backend.md)
+4. [Auth: passwords, sessions, cookies](docs/lessons/04-auth-sessions-and-cookies.md)
+5. [REST, idempotency, optimistic UI](docs/lessons/05-rest-idempotency-and-optimistic-ui.md)
+6. [Observability and tracing](docs/lessons/06-observability-and-tracing.md)
+7. [Testing the stack](docs/lessons/07-testing-the-stack.md)
+
+## Where to go next
+
+All six phases of [the design](DESIGN.md) are built. Each future extension
+in [DESIGN.md §12](DESIGN.md#12-build-plan--6-phases) is a system-design
+lesson waiting to happen: swap SQLite for Postgres (the repository layer
+earns its keep), JWT vs sessions, WebSockets for a live feed, caching,
+rate limiting, Docker.
