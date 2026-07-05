@@ -1,0 +1,72 @@
+/* Deliberately plain styling — CSS frameworks come with their own learning
+   curve, and phase 1 is about the wire, not the paint. */
+
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  background: light-dark(#f6f7f9, #16181d);
+  color: light-dark(#1c1e21, #e8eaed);
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+h1 {
+  margin-bottom: 0;
+}
+
+.tagline {
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+
+.card {
+  background: light-dark(#ffffff, #1f232b);
+  border: 1px solid light-dark(#e2e5ea, #2e333d);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.status {
+  font-weight: 600;
+}
+
+.status.good { color: light-dark(#137333, #7ee2a8); }
+.status.bad { color: light-dark(#c5221f, #ff8d85); }
+.status.pending { opacity: 0.7; }
+
+.hint {
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+pre {
+  background: light-dark(#f1f3f5, #14161a);
+  border-radius: 6px;
+  padding: 0.75rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+
+code {
+  background: light-dark(#f1f3f5, #14161a);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+a { color: light-dark(#1a63d6, #8ab4f8); }
