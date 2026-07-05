@@ -18,4 +18,12 @@ export default defineConfig({
       '/api': 'http://localhost:8000',
     },
   },
+  // Vitest configuration. jsdom fakes a browser (document, DOM nodes) in
+  // plain Node, so component tests run fast, with no real browser.
+  // globals exposes afterEach etc. — Testing Library hooks into it to
+  // unmount components between tests, so tests can't leak into each other.
+  test: {
+    environment: 'jsdom',
+    globals: true,
+  },
 })

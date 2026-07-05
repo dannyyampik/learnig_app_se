@@ -13,9 +13,13 @@ Two kinds of failure flow through here:
   ``JSONResponse(status_code=...)`` by hand.
 """
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger("glassbox")
 
 
 class AppError(Exception):
@@ -86,6 +90,21 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     return error_response(400, "VALIDATION", "Invalid request.", details)
 
 
+async def unexpected_error_handler(request: Request, exc: Exception):
+    """The last line of defense: a bug we didn't anticipate.
+
+    Two audiences, two very different messages. *We* get the full
+    traceback in the server log; *the client* gets the envelope with a
+    deliberately vague message — internals in error responses (stack
+    traces, table names, file paths) are a classic information leak.
+    """
+    logger.exception("unhandled error on %s %s", request.method, request.url.path)
+    return error_response(500, "INTERNAL", "Something went wrong on our side.")
+
+
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(AppError, app_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
+    # Exception (the catch-all) is special-cased by Starlette: it runs in
+    # the outermost middleware, after ours has already seen the failure.
+    app.add_exception_handler(Exception, unexpected_error_handler)
