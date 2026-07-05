@@ -1,6 +1,11 @@
-// One post in the feed. Purely presentational: it receives a post object
-// (already fetched by FeedPage) and renders it. Components like this are
-// easy to reuse and easy to test because they hold no state of their own.
+import { Link } from 'react-router-dom'
+import { apiDelete } from '../api.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import LikeButton from './LikeButton.jsx'
+
+// One post in the feed (or on a profile). Mostly presentational — the
+// only actions are the like button (its own component) and deleting
+// your own posts.
 
 function timeAgo(isoString) {
   // The backend sends an absolute UTC timestamp; turning it into "5m ago"
@@ -14,29 +19,44 @@ function timeAgo(isoString) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-export default function PostCard({ post }) {
+export default function PostCard({ post, onDeleted }) {
+  const { user } = useAuth()
+  const isMine = user && user.username === post.author
+
+  async function handleDelete() {
+    // The server is the real judge of "is this yours?" (403 if not) —
+    // hiding the button for others is UI politeness, not security.
+    await apiDelete(`/posts/${post.id}`)
+    onDeleted?.(post.id)
+  }
+
   return (
     <article className="post">
       <div className="post-head">
-        <strong>@{post.author}</strong>
-        <time dateTime={post.createdAt} title={post.createdAt}>
-          {timeAgo(post.createdAt)}
-        </time>
+        <Link to={`/u/${post.author}`} className="author-link">
+          @{post.author}
+        </Link>
+        <span className="post-head-right">
+          <time dateTime={post.createdAt} title={post.createdAt}>
+            {timeAgo(post.createdAt)}
+          </time>
+          {isMine && (
+            <button
+              className="delete"
+              onClick={handleDelete}
+              title="Delete this post"
+            >
+              ✕
+            </button>
+          )}
+        </span>
       </div>
       {/* React escapes post.body automatically — a post containing
           <script> renders as text, not code. That's XSS protection
           working silently on our behalf. */}
       <p className="post-body">{post.body}</p>
       <div className="post-foot">
-        {/* likedByMe is computed by the SQL feed query for the logged-in
-            viewer. Clicking (like/unlike) arrives in phase 4. */}
-        <button
-          className={post.likedByMe ? 'like liked' : 'like'}
-          disabled
-          title="Liking arrives in phase 4"
-        >
-          ♥ {post.likeCount}
-        </button>
+        <LikeButton key={`${post.id}-${post.likedByMe}`} post={post} />
       </div>
     </article>
   )

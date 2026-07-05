@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from '../api.js'
 import PostCard from '../components/PostCard.jsx'
+import PostComposer from '../components/PostComposer.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 
 // The feed: fetch a page of posts from the backend, render it, and let
 // the user pull more. Every post you see was a row in SQLite one moment
 // ago — JOINed with its author, counted for likes, and serialized to
 // JSON on its way here.
 export default function FeedPage() {
+  const { user } = useAuth()
   const [posts, setPosts] = useState([])
   const [hasMore, setHasMore] = useState(false)
   const [page, setPage] = useState(1)
@@ -57,25 +60,41 @@ export default function FeedPage() {
     )
   }
 
+  // The composer prepends new posts; deletes filter them out. Both edit
+  // local state with what the server confirmed — no full refetch needed.
+  const composer = user && (
+    <PostComposer onCreated={(post) => setPosts((prev) => [post, ...prev])} />
+  )
+
   if (posts.length === 0) {
     return (
-      <div className="card">
-        <p>The feed is empty — the database has no posts yet.</p>
-        <p className="hint">
-          Give it some demo data: <code>cd server && python -m app.db.seed</code>{' '}
-          then reload this page.
-        </p>
-      </div>
+      <>
+        {composer}
+        <div className="card">
+          <p>The feed is empty — nobody has posted yet.</p>
+          {!user && (
+            <p className="hint">
+              Log in to post, or seed demo data:{' '}
+              <code>cd server && python -m app.db.seed</code> and reload.
+            </p>
+          )}
+        </div>
+      </>
     )
   }
 
   return (
     <>
+      {composer}
       <section className="feed">
         {posts.map((post) => (
           // `key` lets React match list items across re-renders; the post
           // id is perfect because the database guarantees it's unique.
-          <PostCard key={post.id} post={post} />
+          <PostCard
+            key={post.id}
+            post={post}
+            onDeleted={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+          />
         ))}
       </section>
 

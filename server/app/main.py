@@ -18,7 +18,7 @@ from fastapi import FastAPI
 
 from .db import database
 from .errors import register_error_handlers
-from .routers import auth, posts
+from .routers import auth, posts, users
 
 
 @asynccontextmanager
@@ -37,13 +37,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Glassbox API",
     description="A tiny message board that shows you its own internals.",
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 
 register_error_handlers(app)
 app.include_router(auth.router)
 app.include_router(posts.router)
+app.include_router(users.router)
 
 
 @app.get("/api/health")

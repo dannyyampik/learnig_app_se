@@ -3,6 +3,7 @@ import NavBar from './components/NavBar.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import FeedPage from './pages/FeedPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
 
 // App is the frame: auth state on the outside, router inside it, pages
@@ -32,6 +33,7 @@ function Shell() {
           <Route path="/" element={<FeedPage key={user?.id ?? 'anon'} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/u/:username" element={<ProfilePage />} />
           <Route
             path="*"
             element={<p className="status bad">404 — no such page.</p>}

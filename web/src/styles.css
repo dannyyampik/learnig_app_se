@@ -148,6 +148,97 @@ body {
   opacity: 0.6;
 }
 
+.composer {
+  background: light-dark(#ffffff, #1f232b);
+  border: 1px solid light-dark(#e2e5ea, #2e333d);
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.composer textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.composer-foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.counter {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.counter.over {
+  color: light-dark(#c5221f, #ff8d85);
+  opacity: 1;
+  font-weight: 700;
+}
+
+.composer button[type='submit'] {
+  padding: 0.35rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  background: light-dark(#1a63d6, #8ab4f8);
+  color: light-dark(#ffffff, #14161a);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.composer button[type='submit']:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.author-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.author-link:hover {
+  text-decoration: underline;
+}
+
+.post-head-right {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.delete {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.4;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 0.2rem;
+}
+
+.delete:hover {
+  opacity: 1;
+  color: light-dark(#c5221f, #ff8d85);
+}
+
+.like:not(:disabled) {
+  cursor: pointer;
+}
+
+.profile-head h2 {
+  margin-bottom: 0.25rem;
+}
+
 .load-more {
   display: block;
   margin: 1.25rem auto 0;
