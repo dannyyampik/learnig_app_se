@@ -40,3 +40,21 @@ class FeedPage(BaseModel):
     items: list[PostOut]
     page: int
     has_more: bool = Field(serialization_alias="hasMore")
+
+
+class PostCreateIn(BaseModel):
+    """What creating a post accepts. The same 1–280 rule exists three
+    times on purpose: here (reject bad requests), in the DB CHECK
+    (last line of defense), and in the composer UI (fast feedback)."""
+
+    body: str = Field(min_length=1, max_length=280)
+
+
+class ProfileOut(BaseModel):
+    """A user's public page: who they are, their numbers, their posts."""
+
+    username: str
+    created_at: str = Field(serialization_alias="createdAt")
+    post_count: int = Field(serialization_alias="postCount")
+    likes_received: int = Field(serialization_alias="likesReceived")
+    posts: list[PostOut]

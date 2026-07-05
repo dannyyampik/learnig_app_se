@@ -53,3 +53,11 @@ export function apiPost(path, body) {
     body: JSON.stringify(body ?? {}),
   })
 }
+
+export function apiPut(path) {
+  return request(path, { method: 'PUT' })
+}
+
+export function apiDelete(path) {
+  return request(path, { method: 'DELETE' })
+}

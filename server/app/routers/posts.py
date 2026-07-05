@@ -10,8 +10,8 @@ import sqlite3
 from fastapi import APIRouter, Depends, Query
 
 from ..db.database import get_db
-from ..deps import get_current_user
-from ..schemas import FeedPage
+from ..deps import get_current_user, require_user
+from ..schemas import FeedPage, PostCreateIn, PostOut
 from ..services import post_service
 
 router = APIRouter(prefix="/api/posts", tags=["posts"])
@@ -32,3 +32,44 @@ def get_feed(
     return post_service.get_feed(
         conn, page=page, viewer_id=viewer["id"] if viewer else None
     )
+
+
+@router.post("", response_model=PostOut, status_code=201)
+def create_post(
+    body: PostCreateIn,
+    user: sqlite3.Row = Depends(require_user),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> PostOut:
+    """Write a post. 201 Created + the post as the feed will show it."""
+    return post_service.create_post(conn, author_id=user["id"], body=body.body)
+
+
+@router.delete("/{post_id}", status_code=204)
+def delete_post(
+    post_id: int,
+    user: sqlite3.Row = Depends(require_user),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> None:
+    """Delete your own post. Someone else's → 403; nonexistent → 404."""
+    post_service.delete_post(conn, actor_id=user["id"], post_id=post_id)
+
+
+# Like is PUT, not POST: "make it so that I like this post". Saying it
+# twice leaves the world in the same state — idempotent — so a client can
+# safely retry on a flaky network. Unlike is DELETE for the same reason.
+@router.put("/{post_id}/like", status_code=204)
+def like_post(
+    post_id: int,
+    user: sqlite3.Row = Depends(require_user),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> None:
+    post_service.like_post(conn, actor_id=user["id"], post_id=post_id)
+
+
+@router.delete("/{post_id}/like", status_code=204)
+def unlike_post(
+    post_id: int,
+    user: sqlite3.Row = Depends(require_user),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> None:
+    post_service.unlike_post(conn, actor_id=user["id"], post_id=post_id)
