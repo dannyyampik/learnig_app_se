@@ -16,7 +16,95 @@ body {
 .page {
   max-width: 640px;
   margin: 0 auto;
-  padding: 2rem 1rem 4rem;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem;
+  border-bottom: 1px solid light-dark(#e2e5ea, #2e333d);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.nav-note {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.post {
+  background: light-dark(#ffffff, #1f232b);
+  border: 1px solid light-dark(#e2e5ea, #2e333d);
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+}
+
+.post-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+.post-head time {
+  opacity: 0.6;
+  font-size: 0.8rem;
+}
+
+.post-body {
+  margin: 0.4rem 0 0.5rem;
+}
+
+.post-foot {
+  display: flex;
+}
+
+.like {
+  background: none;
+  border: 1px solid light-dark(#e2e5ea, #2e333d);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+  font-size: 0.85rem;
+  color: inherit;
+}
+
+.like:disabled {
+  opacity: 0.55;
+}
+
+.load-more {
+  display: block;
+  margin: 1.25rem auto 0;
+  padding: 0.5rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid light-dark(#c9cdd4, #3a4150);
+  background: light-dark(#ffffff, #1f232b);
+  color: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.load-more:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.feed-end {
+  text-align: center;
+  margin-top: 1.25rem;
 }
 
 h1 {

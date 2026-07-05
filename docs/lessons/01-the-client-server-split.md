@@ -1,7 +1,7 @@
 # Lesson 1 — The Client/Server Split
 
 *Code that demonstrates this: [`server/app/main.py`](../../server/app/main.py),
-[`web/src/App.jsx`](../../web/src/App.jsx), [`web/vite.config.js`](../../web/vite.config.js)*
+[`web/src/pages/FeedPage.jsx`](../../web/src/pages/FeedPage.jsx), [`web/vite.config.js`](../../web/vite.config.js)*
 
 ## The one idea
 
