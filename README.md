@@ -14,7 +14,7 @@ every piece exists. Concept explainers live in [docs/lessons/](./docs/lessons/).
 | 2. Data layer | ✅ | SQLite, migrations, repositories, a real paginated feed |
 | 3. Auth | ✅ | Signup/login, bcrypt, sessions, cookies |
 | 4. Core features | ✅ | Posting, deleting, optimistic likes, profiles |
-| 5. X-Ray panel | ⏳ | Live request-lifecycle inspector |
+| 5. X-Ray panel | ✅ | Live request-lifecycle inspector (press `` ` ``) |
 | 6. Hardening | ⏳ | Tests, error envelope, polish |
 
 ## Running it

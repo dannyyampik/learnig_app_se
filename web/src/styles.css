@@ -239,6 +239,127 @@ body {
   margin-bottom: 0.25rem;
 }
 
+/* ——— the X-Ray panel ——— */
+
+.xray {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(380px, 90vw);
+  overflow-y: auto;
+  background: light-dark(#101318, #0c0e12);
+  color: #d6dae2;
+  border-left: 1px solid #2e333d;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  padding: 0.6rem 0.7rem 2rem;
+  box-sizing: border-box;
+  z-index: 10;
+}
+
+.xray-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.xray-head .xray-hint {
+  opacity: 0.5;
+  flex: 1;
+}
+
+.xray-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.xray .linklike {
+  color: #8ab4f8;
+}
+
+.xray-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.xray-entry {
+  border: 1px solid #262b34;
+  border-radius: 6px;
+  background: #14171d;
+}
+
+.xray-summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.xray-method {
+  font-weight: 700;
+  color: #8ab4f8;
+  min-width: 3.2em;
+}
+
+.xray-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xray-status.s2 { color: #7ee2a8; }
+.xray-status.s4 { color: #ffcf86; }
+.xray-status.s5 { color: #ff8d85; }
+
+.xray-ms {
+  opacity: 0.6;
+}
+
+.xray-detail {
+  border-top: 1px solid #262b34;
+  padding: 0.4rem 0.5rem 0.5rem;
+}
+
+.xray-detail h4 {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.55;
+}
+
+.xray-detail ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.xray-detail li {
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.xray-none {
+  opacity: 0.55;
+}
+
 .load-more {
   display: block;
   margin: 1.25rem auto 0;

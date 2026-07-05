@@ -1,6 +1,8 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import NavBar from './components/NavBar.jsx'
+import XRayPanel from './components/XRayPanel.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
+import { XRayProvider } from './context/XRayContext.jsx'
 import FeedPage from './pages/FeedPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
@@ -12,11 +14,13 @@ import SignupPage from './pages/SignupPage.jsx'
 // you click between / and /login: no document loads, only API calls.
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Shell />
-      </BrowserRouter>
-    </AuthProvider>
+    <XRayProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Shell />
+        </BrowserRouter>
+      </AuthProvider>
+    </XRayProvider>
   )
 }
 
@@ -40,6 +44,7 @@ function Shell() {
           />
         </Routes>
       </main>
+      <XRayPanel />
     </>
   )
 }

@@ -15,6 +15,7 @@ import sqlite3
 
 from fastapi import Depends, Request
 
+from . import trace
 from .db.database import get_db
 from .errors import UnauthorizedError
 from .services import auth_service
@@ -27,10 +28,15 @@ def get_current_user(
 ) -> sqlite3.Row | None:
     session_id = request.cookies.get(SESSION_COOKIE)
     if not session_id:
+        trace.add_step("no session cookie → anonymous")
         return None
     # An unknown/expired session id is the same as no session: None, not an
     # error — being logged out isn't a mistake.
-    return auth_service.user_for_session(conn, session_id)
+    user = auth_service.user_for_session(conn, session_id)
+    trace.add_step(
+        f"session cookie → @{user['username']}" if user else "session unknown → anonymous"
+    )
+    return user
 
 
 def require_user(user: sqlite3.Row | None = Depends(get_current_user)) -> sqlite3.Row:

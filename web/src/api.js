@@ -16,6 +16,29 @@ export class ApiError extends Error {
   }
 }
 
+// X-Ray: the backend describes what it did (auth steps, SQL, timings) in
+// an X-Glassbox-Trace header on every /api response. Because ALL requests
+// flow through this one file, this is the one place that needs to read it.
+// Components can't be reached from here, so we use a tiny pub/sub: the
+// XRay context subscribes, we publish.
+const traceListeners = new Set()
+
+export function onTrace(listener) {
+  traceListeners.add(listener)
+  return () => traceListeners.delete(listener) // unsubscribe
+}
+
+function publishTrace(response) {
+  const header = response.headers.get('X-Glassbox-Trace')
+  if (!header) return
+  try {
+    const traceData = JSON.parse(header)
+    traceListeners.forEach((listener) => listener(traceData))
+  } catch {
+    // a malformed trace must never break the actual request
+  }
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${BASE}${path}`, {
     headers: { Accept: 'application/json', ...options.headers },
@@ -24,6 +47,8 @@ async function request(path, options = {}) {
     credentials: 'include',
     ...options,
   })
+
+  publishTrace(response)
 
   if (!response.ok) {
     // The design says all errors share one JSON shape; fall back to the

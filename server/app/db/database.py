@@ -11,7 +11,10 @@ to install, but real SQL. Two jobs live here:
 
 import os
 import sqlite3
+import time
 from pathlib import Path
+
+from .. import trace
 
 MIGRATIONS_DIR = Path(__file__).parent / "migrations"
 
@@ -23,8 +26,21 @@ def db_path() -> str:
     return os.environ.get("GLASSBOX_DB", str(DEFAULT_DB_PATH))
 
 
+class TracedConnection(sqlite3.Connection):
+    """A normal SQLite connection that reports every query to the X-Ray
+    trace. Repositories don't know or care — they call ``execute`` as
+    always; the timing happens underneath them."""
+
+    def execute(self, sql, parameters=(), /):
+        started = time.perf_counter()
+        try:
+            return super().execute(sql, parameters)
+        finally:
+            trace.add_sql(sql, (time.perf_counter() - started) * 1000)
+
+
 def connect(path: str | None = None) -> sqlite3.Connection:
-    conn = sqlite3.connect(path or db_path())
+    conn = sqlite3.connect(path or db_path(), factory=TracedConnection)
     # Rows behave like dicts (row["username"]) instead of bare tuples.
     conn.row_factory = sqlite3.Row
     # SQLite doesn't enforce foreign keys unless you ask. We ask.
