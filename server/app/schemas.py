@@ -10,6 +10,23 @@ automatically.
 from pydantic import BaseModel, Field
 
 
+class CredentialsIn(BaseModel):
+    """What signup and login accept. Declared once, enforced by FastAPI on
+    every request — the server-side half of the validation story."""
+
+    username: str = Field(min_length=3, max_length=20, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(min_length=8, max_length=128)
+
+
+class UserOut(BaseModel):
+    """What the API says about a user. Note what's absent: password_hash
+    stays inside the server, always."""
+
+    id: int
+    username: str
+    created_at: str = Field(serialization_alias="createdAt")
+
+
 class PostOut(BaseModel):
     id: int
     body: str

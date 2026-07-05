@@ -32,11 +32,29 @@ body {
 .brand {
   font-weight: 700;
   font-size: 1.1rem;
+  text-decoration: none;
+  color: inherit;
 }
 
-.nav-note {
-  font-size: 0.85rem;
-  opacity: 0.7;
+.nav-right {
+  display: flex;
+  gap: 0.9rem;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+.nav-user {
+  font-weight: 600;
+}
+
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  color: light-dark(#1a63d6, #8ab4f8);
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .feed {
@@ -83,6 +101,51 @@ body {
 
 .like:disabled {
   opacity: 0.55;
+}
+
+.like.liked {
+  color: light-dark(#c5221f, #ff8d85);
+  border-color: currentColor;
+  opacity: 0.9;
+}
+
+.auth-form {
+  max-width: 340px;
+  margin: 2rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.auth-form input {
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid light-dark(#c9cdd4, #3a4150);
+  background: light-dark(#ffffff, #14161a);
+  color: inherit;
+  font-size: 1rem;
+}
+
+.auth-form button[type='submit'] {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: none;
+  background: light-dark(#1a63d6, #8ab4f8);
+  color: light-dark(#ffffff, #14161a);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.auth-form button[type='submit']:disabled {
+  opacity: 0.6;
 }
 
 .load-more {

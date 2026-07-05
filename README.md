@@ -12,7 +12,7 @@ every piece exists. Concept explainers live in [docs/lessons/](./docs/lessons/).
 |---|---|---|
 | 1. Skeleton | ✅ | FastAPI backend + React frontend talking over HTTP |
 | 2. Data layer | ✅ | SQLite, migrations, repositories, a real paginated feed |
-| 3. Auth | ⏳ | Signup/login, sessions, cookies |
+| 3. Auth | ✅ | Signup/login, bcrypt, sessions, cookies |
 | 4. Core features | ⏳ | Posting, likes, profiles, pagination |
 | 5. X-Ray panel | ⏳ | Live request-lifecycle inspector |
 | 6. Hardening | ⏳ | Tests, error envelope, polish |
@@ -29,7 +29,7 @@ see [docs/lessons/01-the-client-server-split.md](./docs/lessons/01-the-client-se
 cd server
 python3 -m venv .venv && source .venv/bin/activate   # first time only
 pip install -e ".[dev]"                              # first time only
-python -m app.db.seed                                # demo data (optional, once)
+python -m app.db.seed    # demo data (optional, once) — log in as alice/password123
 uvicorn app.main:app --reload --port 8000
 ```
 
