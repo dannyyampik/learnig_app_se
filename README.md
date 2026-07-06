@@ -6,7 +6,26 @@
 📖 **Start here:** [DESIGN.md](./DESIGN.md) explains the whole system and why
 every piece exists. Concept explainers live in [docs/lessons/](./docs/lessons/).
 
-## What's here so far
+## How to learn from this repo
+
+A path that works well:
+
+1. **Run it** (below) and click around — post, like, visit a profile.
+2. **Press `` ` `` (backtick)** to open the X-Ray panel, then do everything
+   again. Every click now shows you its HTTP request, the server's auth
+   steps, and the SQL that ran. This panel is the app's whole reason to exist.
+3. **Read the lessons in order** (list below) — each maps to something you
+   just watched happen, and links to the exact code that does it.
+4. **Read the code the lessons point to.** It's written to be read
+   top-to-bottom, with comments explaining *why*, not just *what*.
+5. **Break things.** Stop the backend and reload. Send bad input with
+   `curl`. Delete your session cookie in DevTools. The error handling
+   you'll trigger is part of the design.
+
+When something is unclear, that's not a failure of the path — searching
+the web for a term you just *saw in action* is the best way to use it.
+
+## The build, phase by phase
 
 | Phase | Status | What it adds |
 |---|---|---|
@@ -20,7 +39,8 @@ every piece exists. Concept explainers live in [docs/lessons/](./docs/lessons/).
 ## Running it
 
 You need **Python 3.10+** and **Node 18+**. The app is two programs — a
-backend and a frontend — run in two terminals. (That's the first lesson:
+backend and a frontend — run in two terminals, both starting from the
+repository root. (Two programs is the first lesson:
 see [docs/lessons/01-the-client-server-split.md](./docs/lessons/01-the-client-server-split.md).)
 
 **Terminal 1 — the backend (Python):**
@@ -47,11 +67,17 @@ Then open:
 - **<http://localhost:8000/docs>** — the API playground (FastAPI generates
   this for free; try calling `/api/health` from it)
 
+To start over with fresh demo data: stop the backend, delete
+`server/glassbox.db`, and run the seed again — the whole database is that
+one file.
+
 ## Running the tests
 
+From the repository root:
+
 ```bash
-cd server && source .venv/bin/activate && python -m pytest   # 34 backend tests
-cd web && npm test                                           # 7 component tests
+(cd server && source .venv/bin/activate && python -m pytest)   # 34 backend tests
+(cd web && npm test)                                           # 7 component tests
 ```
 
 ## The lessons

@@ -5,6 +5,13 @@
 > Every layer (frontend, backend, API, database, auth) is deliberately simple,
 > readable, and observable.
 
+> **Status: fully built.** All six phases below are implemented and merged
+> (see the [README](./README.md) to run it). This document is the *plan*
+> as it was written before the code existed — read it for the architecture
+> and the reasoning. The few places where the built code drifted from the
+> plan are listed in [§14](#14-as-built--where-reality-drifted-from-the-plan);
+> the rest matches.
+
 ---
 
 ## 1. Vision & Learning Goals
@@ -147,7 +154,7 @@ proxies (nginx, load balancers) work — another quiet system design lesson.
 | Backend tests | **pytest + FastAPI TestClient** | Unit tests (services) + real-HTTP-level API tests |
 | Frontend | **React 18 + Vite (JavaScript)** | Industry standard; the browser's native language |
 | Frontend routing | **react-router** | Teaches client-side routing vs. server routing |
-| Server state | **Hand-rolled hooks** (no React Query yet) | You learn *why* libraries like React Query exist by feeling the pain first |
+| Server state | **Hand-rolled fetching** (no React Query) | You learn *why* libraries like React Query exist by feeling the pain first |
 | Frontend tests | **Vitest** | A few component tests where they teach something |
 
 **Guiding rule:** *no magic*. Prefer 20 lines of readable code over a
@@ -332,9 +339,11 @@ who you are.
 
 ### State management — three kinds of state, named explicitly
 
-1. **Server state** (posts, profiles) — fetched via a custom `useApi` hook;
-   loading / error / data handled explicitly. *This is the hard 80% of
-   frontend work, and we don't hide it.*
+1. **Server state** (posts, profiles) — fetched through the `api.js`
+   wrapper, with loading / error / data handled explicitly in each page.
+   *This is the hard 80% of frontend work, and we don't hide it.*
+   (The plan sketched a shared `useApi` hook; as built, two pages doing
+   their own fetch didn't justify one — see §14.)
 2. **Session state** (current user) — React context, hydrated once from
    `GET /api/auth/me` on load.
 3. **UI state** (form inputs, panel open/closed) — plain local `useState`.
@@ -401,38 +410,46 @@ the two sides in different languages makes it impossible to blur.
 
 A monorepo with two apps — mirrors the client/server split physically:
 
+The tree below is the repository **as built** (kept in sync so you can
+navigate by it):
+
 ```
 glassbox/
 ├── DESIGN.md                  ← you are here
 ├── docs/
 │   └── lessons/               one short page per concept, linked from code
 ├── server/                    🐍 Python
-│   ├── pyproject.toml         deps: fastapi, uvicorn, bcrypt, pytest, httpx
+│   ├── pyproject.toml         deps: fastapi, uvicorn, bcrypt (+ pytest, httpx)
 │   ├── app/
-│   │   ├── main.py            create app, register routers, apply migrations
-│   │   ├── middleware.py      request logging + X-Ray trace collection
+│   │   ├── main.py            assemble the app: routers, error handlers,
+│   │   │                      migrations at startup, observe middleware
+│   │   │                      (request log + X-Ray trace header)
+│   │   ├── trace.py           the per-request X-Ray trace collector
 │   │   ├── deps.py            get_current_user / require_user dependencies
 │   │   ├── schemas.py         pydantic models (the API contract)
-│   │   ├── errors.py          NotFoundError, ForbiddenError, … + handlers
+│   │   ├── errors.py          typed AppErrors + the one place errors
+│   │   │                      become HTTP responses (incl. 500 catch-all)
 │   │   ├── routers/           auth.py · posts.py · users.py
 │   │   ├── services/          auth_service.py · post_service.py · user_service.py
 │   │   └── db/
 │   │       ├── migrations/    001_init.sql …
-│   │       ├── database.py    connection + migration runner + traced execute
-│   │       └── repositories/  user_repo.py · post_repo.py · like_repo.py
+│   │       ├── database.py    connection factory (traced execute) + migration runner
+│   │       ├── seed.py        demo data (python -m app.db.seed)
+│   │       └── repositories/  user_repo · post_repo · like_repo · session_repo
 │   └── tests/
-│       ├── test_services.py   unit tests, in-memory SQLite
-│       └── test_api.py        real HTTP flows: signup → login → post → like
+│       ├── conftest.py        fixtures: throwaway DB per test + HTTP client
+│       └── test_*.py          one file per feature area (api, feed, auth,
+│                              posts, trace, hardening)
 └── web/                       ⚛️ JavaScript
     ├── package.json
-    ├── vite.config.js         dev proxy → :8000
+    ├── vite.config.js         dev proxy → :8000, vitest config
     └── src/
-        ├── main.jsx · App.jsx
-        ├── api.js             the fetch wrapper + trace capture
+        ├── main.jsx · App.jsx · styles.css
+        ├── api.js             the ONE fetch wrapper: cookies, errors, trace capture
         ├── context/           AuthContext.jsx · XRayContext.jsx
-        ├── hooks/             useApi.js
         ├── pages/             FeedPage · LoginPage · SignupPage · ProfilePage
-        └── components/        NavBar · PostComposer · PostCard · LikeButton · XRayPanel
+        └── components/        NavBar · PostComposer · PostCard · LikeButton ·
+                               AuthForm · XRayPanel  (+ *.test.jsx beside them)
 ```
 
 `docs/lessons/` gets **one short page per concept** (HTTP basics, REST,
@@ -496,3 +513,28 @@ cluster. (Roughly one PR per phase.)
 | 3 | Auth approach | ✅ Sessions + cookies; JWT as a future extension |
 | 4 | X-Ray panel timing | ✅ Phase 5, per the plan |
 | 5 | Lesson docs | ✅ One page per concept in `docs/lessons/`, linked from code |
+
+---
+
+## 14. As Built — Where Reality Drifted from the Plan
+
+No design survives implementation unchanged — knowing *where* and *why*
+yours drifted is part of the craft. Glassbox's list is short:
+
+- **No `middleware.py` file.** The observability middleware ended up as a
+  single function in `main.py` (where the app is assembled), and the trace
+  machinery grew into its own module, `trace.py`. Same responsibilities,
+  different file boundaries.
+- **No `useApi` hook.** The plan sketched a shared data-fetching hook;
+  with only two pages fetching, each doing its own explicit
+  loading/error/data state was simpler than the abstraction. The rule of
+  thumb at work: *don't extract a pattern until you've felt it repeat.*
+- **One repo more, one component more.** `session_repo.py` (sessions
+  needed their own SQL home once auth landed) and `AuthForm.jsx` (login
+  and signup turned out to be the same form with different labels).
+- **Tests split by feature**, not the two-file split sketched here —
+  `test_feed.py`, `test_auth.py`, `test_posts.py`, `test_trace.py`,
+  `test_hardening.py`, with shared fixtures in `conftest.py`.
+
+Everything else — the architecture, the layers, the API table in §6, the
+schema in §5, the auth flow in §7 — was built as drawn.

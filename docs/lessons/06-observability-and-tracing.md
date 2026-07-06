@@ -71,6 +71,16 @@ tracing to internal tools. Try the off switch:
 `GLASSBOX_TRACE=0 uvicorn app.main:app` — the app still works, but it's
 gone opaque. That toggle-of-visibility is itself the lesson.
 
+## One line you'll wonder about
+
+Every trace starts with the same query: `PRAGMA foreign_keys = ON`.
+That's not part of any feature — it's the setup line our code runs on
+every **fresh database connection** (see `connect()` in
+[`database.py`](../../server/app/db/database.py)). Seeing it on every
+single request is the trace *proving* something you read in lesson 3:
+each request really does get its own connection, opened and closed like
+a phone call.
+
 ## Try it
 
 1. Press `` ` ``, then like a post: watch the `PUT …/like` trace appear —

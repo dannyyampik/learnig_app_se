@@ -39,13 +39,16 @@ just bytes on a wire, which both sides agree to format as **JSON**.
 ## See it in Glassbox
 
 1. Run both halves (see the [README](../../README.md)), then open
-   <http://localhost:5173>. The page tells you the story of its own request.
-2. Open DevTools → **Network**, reload, and click the `health` request.
-   You can read the actual request headers and the JSON response — this is
-   the entire relationship between the two programs, laid bare.
-3. Kill the Python server and reload. The frontend still renders (it's a
-   separate program!) but its request fails — and the UI shows the error
-   state we wrote for exactly this case.
+   <http://localhost:5173>.
+2. Open DevTools → **Network**, reload, and look at the requests the page
+   made: `me` ("who is logged in?") and `posts` (the feed). Click one —
+   you can read the actual request headers and the JSON response. This is
+   the entire relationship between the two programs, laid bare. (The
+   X-Ray panel — press `` ` `` — shows the same requests, plus what the
+   server did to answer them.)
+3. Kill the Python server (Ctrl-C in its terminal) and reload. The
+   frontend still renders (it's a separate program!) but its requests
+   fail — and the UI shows the error state we wrote for exactly this case.
 
 ## One wrinkle: the dev proxy
 
